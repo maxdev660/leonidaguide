@@ -7,4 +7,4 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "KV"
-id = "52650b0070074b8ca16d3e9a9ced9310"
+id = "REPLACE_KV_ID"
