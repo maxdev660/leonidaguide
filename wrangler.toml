@@ -1,0 +1,10 @@
+name = "leonidaguide"
+pages_build_output_dir = "public"
+compatibility_date = "2024-11-01"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "52650b0070074b8ca16d3e9a9ced9310"

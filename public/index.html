@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LeonidaGuide</title><style>
+:root{--p:#ff3d8b;--o:#ff9a3c;--v:#6a2cff;--bg:#120826;--c:#1e1038;--t:#fff}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:linear-gradient(180deg,#2a0a4a,#120826 60%);color:var(--t);min-height:100vh}
+header{padding:14px 18px;font-size:28px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--p),var(--o));-webkit-background-clip:text;color:transparent}
+nav{display:flex;gap:6px;padding:0 12px;overflow-x:auto}nav a{padding:8px 14px;border-radius:20px;background:var(--c);color:#fff;text-decoration:none;white-space:nowrap;font-size:14px}
+nav a.on{background:linear-gradient(90deg,var(--p),var(--o))}main{padding:14px}
+.card{background:var(--c);border-radius:12px;padding:12px;margin:8px 0}input,select,button,textarea{padding:8px;border-radius:8px;border:1px solid #5a3a8a;background:#2a1650;color:#fff;font:inherit}
+button{background:linear-gradient(90deg,var(--p),var(--o));border:0;font-weight:700;cursor:pointer}
+.bar{height:10px;background:#2a1650;border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--p),var(--o))}
+.map{position:relative;height:65vh;overflow:hidden;background:#0b0418;border-radius:12px;touch-action:none}.world{position:absolute;inset:0;transform-origin:0 0}.world img{width:100%;height:100%;object-fit:fill}
+.mk{position:absolute;width:12px;height:12px;margin:-6px;border-radius:50%;background:var(--o);border:2px solid #fff;cursor:pointer}.mk.f{background:#3f3;opacity:.6}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.muted{opacity:.6}#chat{max-height:50vh;overflow:auto}.me{color:var(--o)}
+</style></head><body><header>LEONIDAGUIDE</header><nav id="nav"></nav><main id="v"></main><script>
+const HUB="https://www.videogameschronicle.com/news/grand-theft-auto-6-complete-walkthrough-hub/";
+const T={de:{guide:"Hilfe / Guide",nosteps:"Noch keine Schritte eingetragen.",walk:"Externes Walkthrough (spoilerarm)",map:"Karte",missions:"Missionen",values:"Werte",index:"Index",ai:"KI",settings:"Einstellungen",search:"Suchen…",empty:"Noch keine Daten.",lang:"Sprache",spoiler:"Spoiler anzeigen",user:"Benutzername",pw:"Passwort",login:"Einloggen",reg:"Registrieren",out:"Ausloggen",send:"Senden",ask:"Frag mich zu GTA 6…",progress:"Fortschritt",hidden:"Spoiler ausgeblendet",found:"gefunden",sync:"Synchronisiert",err:"Fehler"},
+en:{guide:"Help / Guide",nosteps:"No steps added yet.",walk:"External walkthrough (low spoilers)",map:"Map",missions:"Missions",values:"Values",index:"Index",ai:"AI",settings:"Settings",search:"Search…",empty:"No data yet.",lang:"Language",spoiler:"Show spoilers",user:"Username",pw:"Password",login:"Log in",reg:"Sign up",out:"Log out",send:"Send",ask:"Ask me about GTA 6…",progress:"Progress",hidden:"Spoiler hidden",found:"found",sync:"Synced",err:"Error"},
+es:{map:"Mapa",missions:"Misiones",values:"Valores",index:"Índice",ai:"IA",settings:"Ajustes",search:"Buscar…",empty:"Sin datos.",lang:"Idioma",spoiler:"Mostrar spoilers",user:"Usuario",pw:"Contraseña",login:"Entrar",reg:"Registrarse",out:"Salir",send:"Enviar",ask:"Pregunta sobre GTA 6…",progress:"Progreso",hidden:"Spoiler oculto",found:"encontrado",sync:"Sincronizado",err:"Error"},
+fr:{map:"Carte",missions:"Missions",values:"Valeurs",index:"Index",ai:"IA",settings:"Réglages",search:"Rechercher…",empty:"Aucune donnée.",lang:"Langue",spoiler:"Afficher les spoilers",user:"Pseudo",pw:"Mot de passe",login:"Connexion",reg:"Inscription",out:"Déconnexion",send:"Envoyer",ask:"Pose une question sur GTA 6…",progress:"Progression",hidden:"Spoiler masqué",found:"trouvé",sync:"Synchronisé",err:"Erreur"},
+tr:{map:"Harita",missions:"Görevler",values:"Değerler",index:"Dizin",ai:"YZ",settings:"Ayarlar",search:"Ara…",empty:"Veri yok.",lang:"Dil",spoiler:"Spoiler göster",user:"Kullanıcı adı",pw:"Şifre",login:"Giriş",reg:"Kayıt",out:"Çıkış",send:"Gönder",ask:"GTA 6 hakkında sor…",progress:"İlerleme",hidden:"Spoiler gizli",found:"bulundu",sync:"Eşitlendi",err:"Hata"}};
+const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let S={};try{S=JSON.parse(localStorage.lg||"{}")}catch{}
+S.lang??=(navigator.language||"en").slice(0,2);S.spoiler??=false;S.done??={};S.found??={};
+const t=k=>(T[S.lang]||T.en)[k]||T.en[k]||k;
+let tok=localStorage.lgt||"",tm,D={};
+const save=()=>{localStorage.lg=JSON.stringify(S);clearTimeout(tm);if(tok)tm=setTimeout(push,800)};
+const api=(p,o={})=>fetch("/api/"+p,{...o,headers:{"content-type":"application/json",authorization:"Bearer "+tok}}).then(r=>r.json());
+const push=()=>api("sync",{method:"PUT",body:JSON.stringify({done:S.done,found:S.found,lang:S.lang,spoiler:S.spoiler})}).catch(()=>{});
+async function pull(){const r=await api("sync").catch(()=>null);if(r&&r.data){Object.assign(S,r.data);localStorage.lg=JSON.stringify(S)}}
+const tabs=["map","missions","values","index","ai","settings"];
+const V={
+map(){const m=D.markers||{categories:[],markers:[]};let off=[0,0],z=1,hid=new Set();
+ $("#v").innerHTML=`<div class="row">${m.categories.map(c=>`<label><input type=checkbox checked data-c="${esc(c.id)}"> ${esc(c.name)}</label>`).join("")}</div><div class="map" id="mp"><div class="world" id="w"><img src="/data/map.webp" onerror="this.style.display='none'"></div></div>`;
+ const w=$("#w"),draw=()=>{w.querySelectorAll(".mk").forEach(e=>e.remove());m.markers.filter(k=>!hid.has(k.cat)&&(S.spoiler||!k.spoiler)).forEach(k=>{const d=document.createElement("div");d.className="mk"+(S.found[k.id]?" f":"");d.style.left=k.x+"%";d.style.top=k.y+"%";d.title=k.name+(S.found[k.id]?" ✓":"");d.onclick=e=>{e.stopPropagation();S.found[k.id]=!S.found[k.id];if(!S.found[k.id])delete S.found[k.id];save();draw()};w.append(d)})},ap=()=>w.style.transform=`translate(${off[0]}px,${off[1]}px) scale(${z})`;
+ document.querySelectorAll("[data-c]").forEach(i=>i.onchange=()=>{i.checked?hid.delete(i.dataset.c):hid.add(i.dataset.c);draw()});
+ const mp=$("#mp");let dr=null;mp.onpointerdown=e=>dr=[e.clientX-off[0],e.clientY-off[1]];mp.onpointermove=e=>{if(dr){off=[e.clientX-dr[0],e.clientY-dr[1]];ap()}};mp.onpointerup=()=>dr=null;
+ mp.onwheel=e=>{e.preventDefault();z=Math.min(8,Math.max(.5,z*(e.deltaY<0?1.15:.87)));ap()};draw();ap()},
+missions(){const L=(D.missions||[]).filter(x=>S.spoiler||!x.spoiler),n=L.filter(x=>S.done[x.id]).length,p=L.length?Math.round(n/L.length*100):0;
+ $("#v").innerHTML=`<div class="card">${t("progress")}: ${n}/${L.length} (${p}%)<div class="bar"><i style="width:${p}%"></i></div></div>`+(L.map(x=>`<div class=card><label class=row><input type=checkbox data-m="${esc(x.id)}" ${S.done[x.id]?"checked":""}> ${esc(x.title)} <span class=muted>Ch.${esc(x.chapter||"?")}</span></label><details><summary>📖 ${t("guide")}</summary>${(x.steps||[]).length?`<ol>${x.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`:`<p class=muted>${t("nosteps")}</p>`}<a href="${/^https:/.test(x.url||"")?esc(x.url):HUB}" target=_blank rel=noopener style="color:var(--o)">${t("walk")} ↗</a></details></div>`).join("")||`<p>${t("empty")}</p>`);
+ document.querySelectorAll("[data-m]").forEach(i=>i.onchange=()=>{i.checked?S.done[i.dataset.m]=1:delete S.done[i.dataset.m];save();V.missions()})},
+values(){list((D.values||[]).map(v=>({n:v.name,s:v.category,x:"$"+(+v.value).toLocaleString()})))},
+index(){const I=D.index||{};list(Object.entries(I).flatMap(([c,a])=>a.filter(i=>S.spoiler||!i.spoiler).map(i=>({n:i.name,s:c,x:i.info||""}))),Object.keys(I))},
+ai(){$("#v").innerHTML=`<div id=chat></div><div class=row><input id=q style="flex:1" placeholder="${t("ask")}"><button id=go>${t("send")}</button></div>`;const H=[],c=$("#chat");
+ const go=async()=>{const q=$("#q").value.trim();if(!q)return;$("#q").value="";H.push({role:"user",content:q});c.innerHTML+=`<div class=card><b class=me>&gt;</b> ${esc(q)}</div>`;
+ try{const r=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({messages:H.slice(-10),lang:S.lang,spoiler:S.spoiler})}).then(r=>r.json());H.push({role:"assistant",content:r.reply});c.innerHTML+=`<div class=card>${esc(r.reply)}</div>`}catch{c.innerHTML+=`<div class=card>${t("err")}</div>`}c.scrollTop=1e9};$("#go").onclick=go;$("#q").onkeydown=e=>e.key=="Enter"&&go()},
+settings(){$("#v").innerHTML=`<div class=card><p>${t("lang")}: <select id=l>${Object.keys(T).map(k=>`<option ${k==S.lang?"selected":""}>${k}</option>`).join("")}</select></p><p><label><input type=checkbox id=sp ${S.spoiler?"checked":""}> ${t("spoiler")}</label></p></div>
+ <div class=card id=acc>${tok?`<button id=lo>${t("out")}</button> <span class=muted>${t("sync")}</span>`:`<div class=row><input id=u placeholder="${t("user")}"><input id=p type=password placeholder="${t("pw")}"><button id=li>${t("login")}</button><button id=rg>${t("reg")}</button></div><p id=msg></p>`}</div>`;
+ $("#l").onchange=e=>{S.lang=e.target.value;save();boot()};$("#sp").onchange=e=>{S.spoiler=e.target.checked;save()};
+ const au=a=>async()=>{const r=await api("auth",{method:"POST",body:JSON.stringify({action:a,user:$("#u").value,pw:$("#p").value})});if(r.token){tok=r.token;localStorage.lgt=tok;if(a=="login")await pull();else push();boot()}else $("#msg").textContent=r.error||t("err")};
+ if(tok)$("#lo").onclick=()=>{tok="";localStorage.removeItem("lgt");V.settings()};else{$("#li").onclick=au("login");$("#rg").onclick=au("register")}}};
+function list(items,cats){$("#v").innerHTML=`<input id=s placeholder="${t("search")}" style="width:100%"><div id=r></div>`;const r=()=>{const q=$("#s").value.toLowerCase(),a=items.filter(i=>(i.n+i.s).toLowerCase().includes(q));$("#r").innerHTML=a.map(i=>`<div class=card><b>${esc(i.n)}</b> <span class=muted>${esc(i.s)}</span><div>${esc(i.x)}</div></div>`).join("")||(cats?`<p>${t("empty")}</p><p class=muted>${cats.map(esc).join(" · ")}</p>`:`<p>${t("empty")}</p>`)};$("#s").oninput=r;r()}
+function route(){const h=location.hash.slice(1)||"map";$("#nav").innerHTML=tabs.map(k=>`<a href="#${k}" class="${k==h?"on":""}">${t(k)}</a>`).join("");(V[h]||V.map)()}
+async function boot(){document.documentElement.lang=S.lang;route()}
+addEventListener("hashchange",route);
+(async()=>{await Promise.all(["missions","values","index","markers"].map(async n=>D[n]=await fetch("/data/"+n+".json").then(r=>r.json()).catch(()=>null)));if(tok)await pull();boot()})();
+</script></body></html>
